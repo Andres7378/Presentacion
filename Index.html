@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reporte CRM — Blender Group</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff; --bg2: #f5f4f0; --bg3: #eeecea;
+    --text: #1a1a18; --text2: #5f5e5a; --text3: #9c9a92;
+    --blue-bg: #e6f1fb; --blue-txt: #0c447c; --blue-border: #378add;
+    --green-bg: #eaf3de; --green-txt: #27500a; --green-border: #639922;
+    --amber-bg: #faeeda; --amber-txt: #633806; --amber-border: #ba7517;
+    --red-bg: #fcebeb; --red-txt: #791f1f; --red-border: #e24b4a;
+    --border: rgba(0,0,0,0.12); --radius: 10px; --radius-lg: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a; --bg2: #242422; --bg3: #2c2c2a;
+      --text: #e8e6dc; --text2: #b0ae a6; --text3: #737068;
+      --blue-bg: #0c2840; --blue-txt: #85b7eb; --blue-border: #185fa5;
+      --green-bg: #152208; --green-txt: #c0dd97; --green-border: #3b6d11;
+      --amber-bg: #281a04; --amber-txt: #fac775; --amber-border: #854f0b;
+      --red-bg: #280a0a; --red-txt: #f09595; --red-border: #a32d2d;
+      --border: rgba(255,255,255,0.1);
+    }
+  }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 15px; line-height: 1.6; }
+  .header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 20px 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .header-left h1 { font-size: 20px; font-weight: 600; color: var(--text); }
+  .header-left p { font-size: 13px; color: var(--text3); margin-top: 2px; }
+  .badge { background: var(--blue-bg); color: var(--blue-txt); font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--blue-border); }
+  .container { max-width: 960px; margin: 0 auto; padding: 24px 20px 60px; }
+  .nav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 100; padding-top: 16px; }
+  .nav button { padding: 7px 16px; border: 1px solid var(--border); border-radius: 20px; font-size: 13px; cursor: pointer; background: transparent; color: var(--text2); transition: all .15s; white-space: nowrap; font-family: inherit; }
+  .nav button:hover { background: var(--bg2); }
+  .nav button.on { background: var(--blue-bg); color: var(--blue-txt); border-color: var(--blue-border); font-weight: 600; }
+  .panel { display: none; animation: fadeIn .2s ease; }
+  .panel.on { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  .eyebrow { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; font-weight: 600; }
+  h2 { font-size: 22px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  h3 { font-size: 16px; font-weight: 600; color: var(--text); margin: 28px 0 10px; }
+  h4 { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  p { font-size: 14px; color: var(--text2); margin-bottom: 10px; }
+  ul { padding-left: 18px; }
+  li { font-size: 14px; color: var(--text2); margin-bottom: 4px; }
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin: 16px 0; }
+  .metric { background: var(--bg2); border-radius: var(--radius); padding: 16px; }
+  .metric .n { font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; }
+  .metric .l { font-size: 12px; color: var(--text3); margin-top: 6px; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+  .tg-blue { background: var(--blue-bg); color: var(--blue-txt); }
+  .tg-green { background: var(--green-bg); color: var(--green-txt); }
+  .tg-amber { background: var(--amber-bg); color: var(--amber-txt); }
+  .tg-red { background: var(--red-bg); color: var(--red-txt); }
+  .alert { border-radius: 0 var(--radius) var(--radius) 0; padding: 12px 16px; font-size: 13px; line-height: 1.65; margin: 12px 0; }
+  .al-blue { background: var(--blue-bg); color: var(--blue-txt); border-left: 3px solid var(--blue-border); }
+  .al-green { background: var(--green-bg); color: var(--green-txt); border-left: 3px solid var(--green-border); }
+  .al-amber { background: var(--amber-bg); color: var(--amber-txt); border-left: 3px solid var(--amber-border); }
+  .al-red { background: var(--red-bg); color: var(--red-txt); border-left: 3px solid var(--red-border); }
+  .card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 14px; }
+  .row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .row:last-child { border-bottom: none; }
+  .rl { color: var(--text2); }
+  .rv { font-weight: 600; color: var(--text); text-align: right; }
+  .chk { color: #3b6d11; font-size: 15px; }
+  .xm { color: #a32d2d; font-size: 15px; }
+  .part { color: #854f0b; font-size: 15px; }
+  .chart-wrap { position: relative; width: 100%; margin: 14px 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 10px; font-size: 12px; color: var(--text2); }
+  .leg-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; display: inline-block; }
+  .comp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin: 14px 0; }
+  .comp-card { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; background: var(--bg); }
+  .comp-card.featured { border: 2px solid var(--blue-border); background: var(--blue-bg); }
+  .comp-card h4 { font-size: 15px; }
+  .comp-card .price { font-size: 24px; font-weight: 700; color: var(--text); margin: 8px 0 2px; }
+  .comp-card .sub { font-size: 11px; color: var(--text3); margin-bottom: 12px; }
+  .feat-row { display: flex; align-items: flex-start; gap: 7px; padding: 5px 0; font-size: 12px; color: var(--text2); border-bottom: 1px solid var(--border); }
+  .feat-row:last-of-type { border-bottom: none; }
+  .plan-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 14px 0; }
+  @media (max-width: 600px) { .plan-grid { grid-template-columns: 1fr; } }
+  .plan { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; background: var(--bg); }
+  .plan.rec { border: 2px solid var(--blue-border); }
+  .plan .pname { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .05em; }
+  .plan .pprice { font-size: 26px; font-weight: 700; color: var(--text); margin: 6px 0 2px; }
+  .plan .psub { font-size: 11px; color: var(--text3); margin-bottom: 12px; }
+  .plan ul { list-style: none; padding: 0; }
+  .plan ul li { font-size: 12px; color: var(--text2); padding: 5px 0; border-bottom: 1px solid var(--border); display: flex; gap: 6px; align-items: flex-start; }
+  .plan ul li:last-child { border-bottom: none; }
+  .feat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  @media (max-width: 550px) { .feat-grid { grid-template-columns: 1fr; } }
+  .q-item { padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: flex-start; }
+  .q-item:last-child { border-bottom: none; }
+  .q-num { width: 26px; height: 26px; border-radius: 50%; background: var(--blue-bg); color: var(--blue-txt); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .q-num.amber { background: var(--amber-bg); color: var(--amber-txt); }
+  .q-num.green { background: var(--green-bg); color: var(--green-txt); }
+  .q-content h4 { margin-bottom: 4px; }
+  .q-content p { margin: 0; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+  @media (max-width: 550px) { .two-col { grid-template-columns: 1fr; } }
+  .section-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; }
+  .section-card h4 { margin-bottom: 8px; }
+  .footer { margin-top: 48px; padding: 20px; text-align: center; font-size: 12px; color: var(--text3); border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Estudio estratégico de CRM</h1>
+    <p>Blender Group · Materiales para acabados arquitectónicos · México</p>
+  </div>
+  <span class="badge">6-8 agentes de ventas</span>
+</div>
+
+<div class="container">
+
+<div class="nav">
+  <button class="on" onclick="show('diagnostico', this)">Diagnóstico</button>
+  <button onclick="show('kommo', this)">Oferta Kommo</button>
+  <button onclick="show('comparativa', this)">Comparativa</button>
+  <button onclick="show('alternativas', this)">Alternativas</button>
+  <button onclick="show('followup', this)">Preguntas clave</button>
+</div>
+
+<!-- DIAGNOSTICO -->
+<div id="diagnostico" class="panel on">
+  <div class="eyebrow">El problema de Blender Group</div>
+  <h2>Un cuello de botella crítico en la atención de leads</h2>
+  <p>Las campañas de Meta generan leads continuamente, pero la capacidad de respuesta no escala con la demanda. Una sola persona atiende todos los canales manualmente mientras 7 agentes están disponibles sin asignar.</p>
+
+  <div class="metrics">
+    <div class="metric"><div class="n">1</div><div class="l">persona atendiendo hoy</div></div>
+    <div class="metric"><div class="n">4+</div><div class="l">canales sin centralizar</div></div>
+    <div class="metric"><div class="n">6-8</div><div class="l">agentes disponibles sin usar</div></div>
+    <div class="metric"><div class="n">0</div><div class="l">automatizaciones activas</div></div>
+  </div>
+
+  <h3>Capacidad actual vs. demanda generada</h3>
+  <div class="legend">
+    <span style="display:flex;align-items:center;gap:6px"><span class="leg-dot" style="background:#185FA5"></span>Capacidad de atención</span>
+    <span style="display:flex;align-items:center;gap:6px"><span class="leg-dot" style="background:#BA7517"></span>Volumen de leads (campañas)</span>
+  </div>
+  <div class="chart-wrap" style="height:220px"><canvas id="c1" role="img" aria-label="Capacidad actual 20% vs volumen de leads 100%">Capacidad actual: 20%, Volumen de leads: 100%</canvas></div>
+
+  <h3>Distribución de leads por canal</h3>
+  <div class="legend">
+    <span style="display:flex;align-items:center;gap:6px"><span class="leg-dot" style="background:#185FA5"></span>% del total de leads</span>
+  </div>
+  <div class="chart-wrap" style="height:200px"><canvas id="c2" role="img" aria-label="Meta 60%, WhatsApp directo 20%, Instagram 10%, otros 10%">Meta 60%, WhatsApp directo 20%, Instagram 10%, otros 10%</canvas></div>
+
+  <h3>Costo de no actuar</h3>
+  <div class="alert al-red">Sin CRM, cada lead no atendido a tiempo tiene 80% menos probabilidad de convertirse. En materiales para construcción, el primer proveedor en responder gana la cotización.</div>
+  <div class="alert al-amber">Un agente puede atender 15-20 conversaciones simultáneas. Si las campañas generan más, los leads se pierden silenciosamente — sin registro ni seguimiento.</div>
+  <div class="alert al-green">Con 8 agentes distribuidos y un bot de calificación inicial, Blender Group multiplica su capacidad sin aumentar el equipo.</div>
+
+  <h3>Los 3 modelos de distribución posibles</h3>
+  <div class="alert al-blue"><strong>Opción A.</strong> Un número central → asignación manual por el primer agente según reglas internas (replica el proceso actual, pero ordenado en el CRM).</div>
+  <div class="alert al-green"><strong>Opción B — Recomendada.</strong> Un número central → bot de calificación automática → derivación al agente correcto según respuestas del lead.</div>
+  <div class="alert al-amber"><strong>Opción C.</strong> Campañas asignadas a distintos números de WhatsApp → cada número entra automáticamente a un embudo específico del CRM.</div>
+</div>
+
+<!-- KOMMO -->
+<div id="kommo" class="panel">
+  <div class="eyebrow">Oferta completa de Kommo</div>
+  <h2>Todo lo que Kommo ofrece a Blender Group</h2>
+
+  <h3>Planes y precios (por usuario / mes)</h3>
+  <div class="plan-grid">
+    <div class="plan">
+      <div class="pname">Básico</div>
+      <div class="pprice">$15 <span style="font-size:14px;font-weight:400">USD</span></div>
+      <div class="psub">por usuario / mes</div>
+      <ul>
+        <li><span class="chk">✓</span> Pipeline visual de ventas</li>
+        <li><span class="chk">✓</span> Inbox unificado multi-canal</li>
+        <li><span class="chk">✓</span> App móvil iOS y Android</li>
+        <li><span class="chk">✓</span> Gestión de contactos</li>
+        <li><span class="chk">✓</span> Estadísticas básicas</li>
+        <li><span class="xm">✗</span> Sin automatizaciones</li>
+        <li><span class="xm">✗</span> Sin bots ni agente IA</li>
+        <li><span class="xm">✗</span> Sin difusión masiva</li>
+      </ul>
+    </div>
+    <div class="plan rec">
+      <div style="margin-bottom:8px"><span class="tag tg-blue">★ Recomendado</span></div>
+      <div class="pname">Avanzado</div>
+      <div class="pprice">$25 <span style="font-size:14px;font-weight:400">USD</span></div>
+      <div class="psub">por usuario / mes</div>
+      <ul>
+        <li><span class="chk">✓</span> Todo lo del plan Básico</li>
+        <li><span class="chk">✓</span> Automatizaciones ilimitadas</li>
+        <li><span class="chk">✓</span> Bot de ventas (Salesbot)</li>
+        <li><span class="chk">✓</span> Agente de IA (260 msgs/mes)</li>
+        <li><span class="chk">✓</span> Difusión masiva WhatsApp</li>
+        <li><span class="chk">✓</span> Plantillas Meta aprobadas</li>
+        <li><span class="chk">✓</span> Segmentación avanzada</li>
+        <li><span class="chk">✓</span> Tokens IA adicionales (compra extra)</li>
+      </ul>
+    </div>
+    <div class="plan">
+      <div class="pname">Pro</div>
+      <div class="pprice">$45 <span style="font-size:14px;font-weight:400">USD</span></div>
+      <div class="psub">por usuario / mes</div>
+      <ul>
+        <li><span class="chk">✓</span> Todo lo del plan Avanzado</li>
+        <li><span class="chk">✓</span> Agente IA: 500 msgs/mes</li>
+        <li><span class="chk">✓</span> Kommo IA: sugerencias auto</li>
+        <li><span class="chk">✓</span> Responde mensajes de voz</li>
+        <li><span class="chk">✓</span> Agenda citas automáticamente</li>
+        <li><span class="chk">✓</span> Análisis avanzado de equipo</li>
+        <li><span class="part">~</span> Diseñado para 10-20 usuarios</li>
+        <li><span class="part">~</span> Overkill para equipo de 8</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Costo total para Blender Group — 8 usuarios, Plan Avanzado</h3>
+  <div class="card">
+    <div class="row"><span class="rl">Costo mensual (8 × $25)</span><span class="rv">$200 USD/mes</span></div>
+    <div class="row"><span class="rl">Mínimo de contratación (6 meses)</span><span class="rv">$1,200 USD</span></div>
+    <div class="row"><span class="rl">Contrato anual (2 meses gratis)</span><span class="rv">~$2,400 USD/año</span></div>
+    <div class="row"><span class="rl">Paquete adicional IA (~400-500 msgs)</span><span class="rv">Cotizar con Francesca</span></div>
+    <div class="row"><span class="rl">Plantillas Meta por envío masivo</span><span class="rv">Costo adicional Meta (cotizar)</span></div>
+    <div class="row"><span class="rl">Política de cancelación</span><span class="rv">Devolución proporcional sin penalización</span></div>
+    <div class="row"><span class="rl">Pago</span><span class="rv">Tarjeta de crédito o PayPal</span></div>
+  </div>
+
+  <h3>Funcionalidades incluidas en el Plan Avanzado</h3>
+  <div class="feat-grid">
+    <div class="section-card">
+      <h4>WhatsApp Business API oficial</h4>
+      <hr class="divider">
+      <div class="feat-row"><span class="chk">✓</span> Integración nativa (sin terceros)</div>
+      <div class="feat-row"><span class="chk">✓</span> WhatsApp Coexistence (celular + CRM)</div>
+      <div class="feat-row"><span class="chk">✓</span> Múltiples números en una cuenta</div>
+      <div class="feat-row"><span class="chk">✓</span> Requiere Meta Business Portfolio</div>
+    </div>
+    <div class="section-card">
+      <h4>Agente de IA y automatización</h4>
+      <hr class="divider">
+      <div class="feat-row"><span class="chk">✓</span> Bot de calificación sin código</div>
+      <div class="feat-row"><span class="chk">✓</span> Derivación automática por respuesta</div>
+      <div class="feat-row"><span class="chk">✓</span> IA conversacional 260 msgs/mes</div>
+      <div class="feat-row"><span class="part">~</span> Tokens se renuevan (no se acumulan)</div>
+    </div>
+    <div class="section-card">
+      <h4>Pipeline y seguimiento</h4>
+      <hr class="divider">
+      <div class="feat-row"><span class="chk">✓</span> Hasta 50 embudos simultáneos</div>
+      <div class="feat-row"><span class="chk">✓</span> Tarjeta de lead con historial completo</div>
+      <div class="feat-row"><span class="chk">✓</span> Código de campaña Meta por lead</div>
+      <div class="feat-row"><span class="chk">✓</span> Estadísticas por agente y por embudo</div>
+    </div>
+    <div class="section-card">
+      <h4>Canales conectables</h4>
+      <hr class="divider">
+      <div class="feat-row"><span class="chk">✓</span> WhatsApp / Instagram / Facebook</div>
+      <div class="feat-row"><span class="chk">✓</span> TikTok / Telegram / Email</div>
+      <div class="feat-row"><span class="chk">✓</span> Formularios web y chat widget</div>
+      <div class="feat-row"><span class="chk">✓</span> API para integraciones personalizadas</div>
+    </div>
+  </div>
+
+  <div class="alert al-blue">Trial gratuito 14 días — extensible a 1 mes completo solicitándolo con Francesca. Licencias ilimitadas, todos los usuarios en el mismo plan.</div>
+</div>
+
+<!-- COMPARATIVA -->
+<div id="comparativa" class="panel">
+  <div class="eyebrow">Análisis de mercado</div>
+  <h2>Kommo vs. competidores directos</h2>
+  <p>Evaluación filtrada para equipos de 6-10 agentes en México/LATAM con alto volumen de WhatsApp y necesidad de agente de IA.</p>
+
+  <h3>Costo mensual para 8 usuarios</h3>
+  <div class="legend">
+    <span style="display:flex;align-items:center;gap:6px"><span class="leg-dot" style="background:#185FA5"></span>Kommo (evaluado)</span>
+    <span style="display:flex;align-items:center;gap:6px"><span class="leg-dot" style="background:#888780"></span>Competidores</span>
+  </div>
+  <div class="chart-wrap" style="height:240px"><canvas id="c3" role="img" aria-label="Costo mensual: Kommo $200, Respond.io $211, WATI $248, Bitrix24 $390, HubSpot $520">Kommo $200, Respond.io $211, WATI $248, Bitrix24 $390, HubSpot $520+</canvas></div>
+
+  <h3>Fit con las necesidades de Blender Group (puntuación 1-10)</h3>
+  <div class="legend">
+    <span style="display:flex;align-items:center;gap:6px"><span class="leg-dot" style="background:#185FA5"></span>Puntuación de compatibilidad</span>
+  </div>
+  <div class="chart-wrap" style="height:260px"><canvas id="c4" role="img" aria-label="Fit: Kommo 8.5, Respond.io 7, Aurora Inbox 6.5, WATI 5.5, Zoho 5, Bitrix24 3.5">Kommo 8.5, Respond.io 7, Aurora 6.5, WATI 5.5, Zoho 5, Bitrix24 3.5</canvas></div>
+
+  <h3>Fichas comparativas por herramienta</h3>
+  <div class="comp-grid">
+    <div class="comp-card featured">
+      <div style="margin-bottom:8px"><span class="tag tg-blue">Evaluado actualmente</span></div>
+      <h4>Kommo</h4>
+      <div class="price">$25</div>
+      <div class="sub">usuario/mes · Plan Avanzado</div>
+      <div class="feat-row"><span class="chk">✓</span> WhatsApp API nativa oficial</div>
+      <div class="feat-row"><span class="chk">✓</span> IA conversacional incluida</div>
+      <div class="feat-row"><span class="chk">✓</span> Multi-canal (IG, FB, TK, Email)</div>
+      <div class="feat-row"><span class="chk">✓</span> Soporte en español + asesora LATAM</div>
+      <div class="feat-row"><span class="chk">✓</span> Pipeline visual intuitivo</div>
+      <div class="feat-row"><span class="chk">✓</span> Coexistence celular + CRM</div>
+      <div class="feat-row"><span class="xm">✗</span> Sin llamadas por WhatsApp</div>
+      <div class="feat-row"><span class="xm">✗</span> Tokens IA no se acumulan</div>
+    </div>
+    <div class="comp-card">
+      <div style="margin-bottom:8px"><span class="tag tg-amber">Alternativa premium</span></div>
+      <h4>Respond.io</h4>
+      <div class="price">$79</div>
+      <div class="sub">plan base (3 usuarios incluidos)</div>
+      <div class="feat-row"><span class="chk">✓</span> WhatsApp API + llamadas WA</div>
+      <div class="feat-row"><span class="chk">✓</span> IA más avanzada que Kommo</div>
+      <div class="feat-row"><span class="chk">✓</span> Uptime 99.999% garantizado</div>
+      <div class="feat-row"><span class="chk">✓</span> Multi-canal completo</div>
+      <div class="feat-row"><span class="xm">✗</span> Soporte solo en inglés</div>
+      <div class="feat-row"><span class="xm">✗</span> Precio escala rápido con usuarios</div>
+      <div class="feat-row"><span class="part">~</span> ~$211/mes para 8 usuarios</div>
+    </div>
+    <div class="comp-card">
+      <div style="margin-bottom:8px"><span class="tag tg-amber">Solo WhatsApp</span></div>
+      <h4>WATI</h4>
+      <div class="price">$49</div>
+      <div class="sub">plan Growth (5 usuarios)</div>
+      <div class="feat-row"><span class="chk">✓</span> Especialista en WhatsApp</div>
+      <div class="feat-row"><span class="chk">✓</span> Constructor de chatbot visual</div>
+      <div class="feat-row"><span class="chk">✓</span> Difusiones masivas robustas</div>
+      <div class="feat-row"><span class="xm">✗</span> Solo WhatsApp — sin más canales</div>
+      <div class="feat-row"><span class="xm">✗</span> Sin soporte en español</div>
+      <div class="feat-row"><span class="xm">✗</span> Sin pipeline CRM nativo</div>
+      <div class="feat-row"><span class="part">~</span> ~$248/mes para 8 usuarios</div>
+    </div>
+    <div class="comp-card">
+      <div style="margin-bottom:8px"><span class="tag tg-red">Sobre-dimensionado</span></div>
+      <h4>Bitrix24</h4>
+      <div class="price">$99</div>
+      <div class="sub">plan Standard (hasta 50 usuarios)</div>
+      <div class="feat-row"><span class="chk">✓</span> Suite todo-en-uno (CRM + proyectos)</div>
+      <div class="feat-row"><span class="chk">✓</span> Plan gratuito disponible</div>
+      <div class="feat-row"><span class="xm">✗</span> WhatsApp vía conector externo</div>
+      <div class="feat-row"><span class="xm">✗</span> Curva de aprendizaje muy alta</div>
+      <div class="feat-row"><span class="xm">✗</span> Complejo para equipo de 8</div>
+      <div class="feat-row"><span class="part">~</span> ~$390/mes equivalente</div>
+    </div>
+    <div class="comp-card">
+      <div style="margin-bottom:8px"><span class="tag tg-amber">Económico</span></div>
+      <h4>Zoho CRM</h4>
+      <div class="price">$14</div>
+      <div class="sub">usuario/mes · plan Standard</div>
+      <div class="feat-row"><span class="part">~</span> WhatsApp vía Zoho Marketing</div>
+      <div class="feat-row"><span class="part">~</span> IA basada en reglas (no conversacional)</div>
+      <div class="feat-row"><span class="chk">✓</span> Ecosistema completo Zoho</div>
+      <div class="feat-row"><span class="chk">✓</span> Soporte en español</div>
+      <div class="feat-row"><span class="xm">✗</span> WhatsApp requiere créditos extra</div>
+      <div class="feat-row"><span class="part">~</span> ~$112/mes para 8 usuarios</div>
+    </div>
+    <div class="comp-card">
+      <div style="margin-bottom:8px"><span class="tag tg-green">Alternativa LATAM</span></div>
+      <h4>Aurora Inbox</h4>
+      <div class="price">Desde</div>
+      <div class="sub">plan SMB · hecha para México/LATAM</div>
+      <div class="feat-row"><span class="chk">✓</span> Diseñada para México/LATAM</div>
+      <div class="feat-row"><span class="chk">✓</span> WhatsApp multi-agente</div>
+      <div class="feat-row"><span class="chk">✓</span> Soporte nativo en español</div>
+      <div class="feat-row"><span class="part">~</span> IA en desarrollo (menos madura)</div>
+      <div class="feat-row"><span class="part">~</span> Pipeline menos funcional que Kommo</div>
+      <div class="feat-row"><span class="part">~</span> Precio posiblemente menor a Kommo</div>
+    </div>
+  </div>
+</div>
+
+<!-- ALTERNATIVAS -->
+<div id="alternativas" class="panel">
+  <div class="eyebrow">Otras opciones del mercado</div>
+  <h2>3 alternativas que vale la pena cotizar en paralelo</h2>
+  <p>Estas herramientas ofrecen propuestas similares o superiores en aspectos específicos. Recomendamos pedirles demo durante el mismo período de prueba de Kommo para tener comparación real.</p>
+
+  <h3>1. Respond.io — mejor IA y uptime garantizado</h3>
+  <div class="card">
+    <div class="row"><span class="rl">Costo estimado para 8 usuarios</span><span class="rv">~$211 USD/mes (plan Starter)</span></div>
+    <div class="row"><span class="rl">IA conversacional</span><span class="rv">Más avanzada y robusta que Kommo</span></div>
+    <div class="row"><span class="rl">Llamadas por WhatsApp</span><span class="rv">Sí — Kommo no tiene esta función</span></div>
+    <div class="row"><span class="rl">Uptime garantizado</span><span class="rv">99.999% por contrato (Kommo no garantiza)</span></div>
+    <div class="row"><span class="rl">Soporte en español</span><span class="rv">No — solo en inglés</span></div>
+    <div class="row"><span class="rl">Curva de adopción</span><span class="rv">Media-alta para equipo de ventas</span></div>
+    <div class="row"><span class="rl">Ideal si</span><span class="rv">El equipo maneja inglés y priorizan IA más potente</span></div>
+  </div>
+  <div class="alert al-amber">Respond.io es técnicamente superior, pero el soporte solo en inglés puede ser un bloqueador real para el equipo de Blender Group. Preguntar si tienen partners locales en México.</div>
+
+  <h3>2. Aurora Inbox — nativa para el mercado mexicano</h3>
+  <div class="card">
+    <div class="row"><span class="rl">Precio estimado</span><span class="rv">Posiblemente menor a Kommo (cotizar directamente)</span></div>
+    <div class="row"><span class="rl">Mercado objetivo</span><span class="rv">PYMEs mexicanas y latinoamericanas</span></div>
+    <div class="row"><span class="rl">WhatsApp multi-agente</span><span class="rv">Sí — funcionalidad central</span></div>
+    <div class="row"><span class="rl">Agente de IA</span><span class="rv">En desarrollo, menos maduro que Kommo</span></div>
+    <div class="row"><span class="rl">Soporte</span><span class="rv">Español nativo, horario México</span></div>
+    <div class="row"><span class="rl">Pipeline CRM</span><span class="rv">Básico — menos funcional que Kommo</span></div>
+    <div class="row"><span class="rl">Ideal si</span><span class="rv">Presupuesto ajustado y soporte local es prioridad</span></div>
+  </div>
+  <div class="alert al-green">Vale la pena pedir demo. Si el precio es significativamente menor y la IA cumple para calificar leads del rubro, podría ser una opción de entrada válida.</div>
+
+  <h3>3. WATI — el especialista en WhatsApp Business</h3>
+  <div class="card">
+    <div class="row"><span class="rl">Costo estimado para 8 usuarios</span><span class="rv">~$248 USD/mes (plan Pro)</span></div>
+    <div class="row"><span class="rl">Especialidad</span><span class="rv">100% WhatsApp Business API</span></div>
+    <div class="row"><span class="rl">Constructor de bots</span><span class="rv">Visual, intuitivo, sin código</span></div>
+    <div class="row"><span class="rl">Difusiones masivas</span><span class="rv">Muy robustas con analytics detallados</span></div>
+    <div class="row"><span class="rl">Otros canales (IG, TikTok)</span><span class="rv">No — exclusivamente WhatsApp</span></div>
+    <div class="row"><span class="rl">Soporte en español</span><span class="rv">No — limitado</span></div>
+    <div class="row"><span class="rl">Ideal si</span><span class="rv">Solo necesitan WhatsApp y no tienen IG/TikTok activos</span></div>
+  </div>
+  <div class="alert al-red">WATI se descarta si TikTok e Instagram son canales activos de captación. Su falta de multi-canal es un limitante real para el modelo de Blender Group.</div>
+
+  <h3>Comparativa en las 4 dimensiones que más importan</h3>
+  <div class="legend" style="margin-top:12px">
+    <span style="display:flex;align-items:center;gap:6px"><span class="leg-dot" style="background:#185FA5"></span>Kommo</span>
+    <span style="display:flex;align-items:center;gap:6px"><span class="leg-dot" style="background:#BA7517"></span>Respond.io</span>
+    <span style="display:flex;align-items:center;gap:6px"><span class="leg-dot" style="background:#3B6D11"></span>Aurora Inbox</span>
+  </div>
+  <div class="chart-wrap" style="height:280px"><canvas id="c5" role="img" aria-label="Comparativa de Kommo, Respond.io y Aurora en precio accesible, IA, facilidad de uso y soporte español">Comparativa multidimensional de 3 plataformas</canvas></div>
+</div>
+
+<!-- FOLLOW-UP -->
+<div id="followup" class="panel">
+  <div class="eyebrow">Preguntas críticas a hacer</div>
+  <h2>Follow-up antes de tomar la decisión</h2>
+
+  <h3>Para Kommo — soporte técnico (urgentes)</h3>
+  <div class="q-item">
+    <div class="q-num">1</div>
+    <div class="q-content">
+      <h4>¿Hay conflicto con la IA nativa de WhatsApp Meta?</h4>
+      <p>WhatsApp está lanzando su propio agente de IA progresivamente en LATAM. ¿Pueden coexistir el agente de Kommo y el de WhatsApp en el mismo número, o se cancelan mutuamente?</p>
+    </div>
+  </div>
+  <div class="q-item">
+    <div class="q-num">2</div>
+    <div class="q-content">
+      <h4>¿Cuánto cuesta exactamente el paquete adicional de tokens de IA?</h4>
+      <p>El Plan Avanzado incluye 260 msgs de IA por mes. ¿Cuál es el costo en USD del paquete de 5,000 tokens adicionales (~400-500 mensajes)? ¿Se puede comprar más de un paquete por mes?</p>
+    </div>
+  </div>
+  <div class="q-item">
+    <div class="q-num">3</div>
+    <div class="q-content">
+      <h4>¿Qué pasa cuando se acaban los tokens de IA a mitad del mes?</h4>
+      <p>Si las campañas generan picos de leads y se consumen los 260 mensajes antes del día 30, ¿el bot deja de responder automáticamente? ¿Hay alguna alerta o fallback al agente humano?</p>
+    </div>
+  </div>
+  <div class="q-item">
+    <div class="q-num">4</div>
+    <div class="q-content">
+      <h4>¿Las plantillas de Meta tienen costo extra por envío?</h4>
+      <p>Meta cobra por plantillas de difusión masiva. ¿Ese costo viene directo de Meta o hay un markup de Kommo? ¿Cuánto es el costo promedio por plantilla enviada a México?</p>
+    </div>
+  </div>
+  <div class="q-item">
+    <div class="q-num">5</div>
+    <div class="q-content">
+      <h4>¿El agente de IA puede ser entrenado con información de productos?</h4>
+      <p>Para Blender Group es clave que el bot conozca pastas cementicias, pisos y muros. ¿Se puede cargar un catálogo de productos o PDF técnico como fuente de conocimiento del agente?</p>
+    </div>
+  </div>
+
+  <h3>Preguntas de negociación y condiciones</h3>
+  <div class="q-item">
+    <div class="q-num amber">6</div>
+    <div class="q-content">
+      <h4>¿Hay descuento por pago anual anticipado o por ser empresa mexicana?</h4>
+      <p>Ya mencionaron 2 meses gratis al contratar 12 meses. ¿Hay descuento adicional por pago de contado al inicio? ¿Algún programa para empresas de manufactura en México?</p>
+    </div>
+  </div>
+  <div class="q-item">
+    <div class="q-num amber">7</div>
+    <div class="q-content">
+      <h4>¿El onboarding y configuración inicial están incluidos?</h4>
+      <p>¿Francesca como asesora asignada incluye sesiones de configuración del bot, pipelines y automatizaciones? ¿O es solo asesoría comercial? ¿Cuántas sesiones están incluidas?</p>
+    </div>
+  </div>
+  <div class="q-item">
+    <div class="q-num amber">8</div>
+    <div class="q-content">
+      <h4>¿Cuál es el SLA de soporte técnico para México?</h4>
+      <p>Si el bot o la integración de WhatsApp falla durante una campaña activa, ¿cuánto tiempo tarda en resolverse? ¿Hay soporte en español en horario de México (CST)?</p>
+    </div>
+  </div>
+
+  <h3>Para cotizar con las alternativas</h3>
+  <div class="q-item">
+    <div class="q-num green">9</div>
+    <div class="q-content">
+      <h4>Respond.io: ¿tienen soporte en español o partner en México?</h4>
+      <p>El producto es técnicamente superior, pero sin soporte en español la adopción del equipo de ventas se complica. Preguntar si tienen representantes o distribuidores en México que puedan dar soporte en idioma nativo.</p>
+    </div>
+  </div>
+  <div class="q-item">
+    <div class="q-num green">10</div>
+    <div class="q-content">
+      <h4>Aurora Inbox: demostrar calificación de leads de construcción</h4>
+      <p>Pedir una demo con flujo específico: tipo de cliente (arquitecto/contratista/usuario final), producto (piso/muro/fachada), volumen en m². Ver si el agente de IA puede ser entrenado con el catálogo de Blender Group.</p>
+    </div>
+  </div>
+
+  <h3>Pregunta interna de Blender Group (acción inmediata)</h3>
+  <div class="q-item">
+    <div class="q-num amber">11</div>
+    <div class="q-content">
+      <h4>¿Cuántos leads mensuales generan actualmente las campañas?</h4>
+      <p>Este dato es el más crítico para dimensionar el plan. Sin saber el volumen real, es imposible calcular si 260 tokens de IA son suficientes o si se necesitan 3-5 paquetes adicionales por mes. Este número también define el ROI del proyecto.</p>
+    </div>
+  </div>
+
+  <div class="alert al-blue" style="margin-top:20px">
+    <strong>Plan de acción recomendado:</strong> Llevar estas preguntas a una segunda reunión con Francesca + soporte técnico de Kommo. Solicitar al mismo tiempo demos de Respond.io y Aurora Inbox para evaluarlas durante el mes de trial gratuito de Kommo.
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<div class="footer">Reporte generado para Blender Group · Comparativa CRM 2025 · Materiales para acabados arquitectónicos · México</div>
+
+<script>
+function show(id, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  btn.classList.add('on');
+}
+
+(function buildCharts() {
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const tc = isDark ? '#b0aea6' : '#5f5e5a';
+  const gc = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
+
+  new Chart(document.getElementById('c1'), {
+    type: 'bar',
+    data: {
+      labels: ['Capacidad actual (1 agente)', 'Volumen de leads (Meta)'],
+      datasets: [{ data: [20, 100], backgroundColor: ['#185FA5','#BA7517'], borderRadius: 6 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.parsed.y + '%' } } },
+      scales: {
+        x: { ticks: { color: tc, font: { size: 12 } }, grid: { color: gc } },
+        y: { ticks: { color: tc, font: { size: 12 }, callback: v => v + '%' }, grid: { color: gc }, max: 120 }
+      }
+    }
+  });
+
+  new Chart(document.getElementById('c2'), {
+    type: 'bar',
+    data: {
+      labels: ['Meta Ads', 'WhatsApp directo', 'Instagram', 'Otros'],
+      datasets: [{ data: [60, 20, 10, 10], backgroundColor: '#185FA5', borderRadius: 4 }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.parsed.x + '% del total' } } },
+      scales: {
+        x: { ticks: { color: tc, font: { size: 12 }, callback: v => v + '%' }, grid: { color: gc }, max: 80 },
+        y: { ticks: { color: tc, font: { size: 13 } }, grid: { color: gc } }
+      }
+    }
+  });
+
+  new Chart(document.getElementById('c3'), {
+    type: 'bar',
+    data: {
+      labels: ['Kommo', 'Respond.io', 'WATI', 'Bitrix24', 'HubSpot'],
+      datasets: [{ data: [200, 211, 248, 390, 520], backgroundColor: ['#185FA5','#888780','#888780','#888780','#888780'], borderRadius: 6 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => '$' + c.parsed.y + ' USD/mes' } } },
+      scales: {
+        x: { ticks: { color: tc, font: { size: 13 } }, grid: { color: gc } },
+        y: { ticks: { color: tc, font: { size: 12 }, callback: v => '$' + v }, grid: { color: gc } }
+      }
+    }
+  });
+
+  new Chart(document.getElementById('c4'), {
+    type: 'bar',
+    data: {
+      labels: ['Kommo','Respond.io','Aurora Inbox','WATI','Zoho CRM','Bitrix24'],
+      datasets: [{ data: [8.5, 7, 6.5, 5.5, 5, 3.5], backgroundColor: ['#185FA5','#888780','#888780','#888780','#888780','#888780'], borderRadius: 6 }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.parsed.x + ' / 10' } } },
+      scales: {
+        x: { ticks: { color: tc, font: { size: 12 } }, grid: { color: gc }, min: 0, max: 10 },
+        y: { ticks: { color: tc, font: { size: 13 } }, grid: { color: gc } }
+      }
+    }
+  });
+
+  new Chart(document.getElementById('c5'), {
+    type: 'bar',
+    data: {
+      labels: ['Precio accesible', 'Potencia de IA', 'Facilidad de uso', 'Soporte español'],
+      datasets: [
+        { label: 'Kommo', data: [8,7,8,9], backgroundColor: '#185FA5', borderRadius: 4 },
+        { label: 'Respond.io', data: [6,9,6,2], backgroundColor: '#BA7517', borderRadius: 4 },
+        { label: 'Aurora Inbox', data: [9,5,8,9], backgroundColor: '#3B6D11', borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.dataset.label + ': ' + c.parsed.y + '/10' } } },
+      scales: {
+        x: { ticks: { color: tc, font: { size: 12 } }, grid: { color: gc } },
+        y: { ticks: { color: tc, font: { size: 12 } }, grid: { color: gc }, min: 0, max: 10 }
+      }
+    }
+  });
+})();
+</script>
+</body>
+</html>
